@@ -7,6 +7,7 @@ const app = express()
 // CORS — FRONTEND_URL can be comma-separated for multiple origins (e.g. Vercel + localhost)
 const allowedOrigins = [
   ...(process.env.FRONTEND_URL || 'http://localhost:3000').split(',').map(s => s.trim()),
+  'https://medmap-plus-frontend.vercel.app',
   'http://localhost:3001',
   'http://127.0.0.1:3000',
 ]
