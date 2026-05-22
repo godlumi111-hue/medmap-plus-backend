@@ -672,6 +672,11 @@ async function ensureHospitalConnections() {
       const [uRows] = await pool.query('SELECT id FROM users WHERE email = ?', [h.email])
       if (uRows.length) {
         uid = uRows[0].id
+        // Always enforce correct role/status for hospital accounts
+        await pool.query(
+          "UPDATE users SET role = 'clinique', is_active = 1, is_verified = 1 WHERE id = ?",
+          [uid]
+        )
       } else {
         const pw = await hash(PASS)
         const parts = h.nom.split(' ')

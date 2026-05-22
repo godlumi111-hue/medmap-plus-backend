@@ -26,6 +26,7 @@ async function requireAuth(req, res, next) {
 function requireRole(...roles) {
   return (req, res, next) => {
     if (!roles.includes(req.user?.role)) {
+      console.warn(`[auth] 403 user=${req.user?.id} role='${req.user?.role}' required='${roles.join('/')}'`)
       return res.status(403).json({ detail: 'Accès refusé' })
     }
     next()
