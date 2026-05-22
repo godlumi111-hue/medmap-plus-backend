@@ -652,11 +652,11 @@ server.listen(PORT, async () => {
   console.log(`   URL : http://localhost:${PORT}`)
   console.log(`   API : http://localhost:${PORT}/api/v1`)
   console.log(`   Santé : http://localhost:${PORT}/health\n`)
-  await require('../database/auto-init')()
-  await ensureMigrations()
-  await ensureTestAccounts()
-  await ensureHospitalSetup()
-  await ensureVetSetup()
+  try { await require('../database/auto-init')() } catch (e) { console.error('auto-init error:', e.message) }
+  try { await ensureMigrations() }    catch (e) { console.error('migrations error:', e.message) }
+  try { await ensureTestAccounts() }  catch (e) { console.error('test-accounts error:', e.message) }
+  try { await ensureHospitalSetup() } catch (e) { console.error('hospital-setup error:', e.message) }
+  try { await ensureVetSetup() }      catch (e) { console.error('vet-setup error:', e.message) }
 
   // Quick table health check
   const pool = require('./db')
