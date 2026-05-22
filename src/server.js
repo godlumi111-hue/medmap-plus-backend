@@ -652,6 +652,7 @@ server.listen(PORT, async () => {
   console.log(`   URL : http://localhost:${PORT}`)
   console.log(`   API : http://localhost:${PORT}/api/v1`)
   console.log(`   Santé : http://localhost:${PORT}/health\n`)
+  await require('../database/auto-init')()
   await ensureMigrations()
   await ensureTestAccounts()
   await ensureHospitalSetup()
