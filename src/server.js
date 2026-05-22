@@ -7,7 +7,7 @@ const app = require('./app')
 process.on('uncaughtException',  err => console.error('UNCAUGHT EXCEPTION:', err.message))
 process.on('unhandledRejection', err => console.error('UNHANDLED REJECTION:', err))
 
-const PORT = process.env.PORT || 5000
+const PORT = process.env.PORT || 3000
 const allowedOrigins = [
   ...(process.env.FRONTEND_URL || 'http://localhost:3000').split(',').map(s => s.trim()),
   'https://medmap-plus-frontend.vercel.app',
