@@ -274,31 +274,28 @@ async function ensureTestAccounts() {
 async function ensureMigrations() {
   const pool = require('./db')
   const migrations = [
-    // orders columns — base
-    `ALTER TABLE orders
-       ADD COLUMN IF NOT EXISTS frais_livraison DECIMAL(10,2) DEFAULT 700.00,
-       ADD COLUMN IF NOT EXISTS adresse_livraison VARCHAR(500),
-       ADD COLUMN IF NOT EXISTS livreur_id INT,
-       ADD COLUMN IF NOT EXISTS paiement_id INT,
-       ADD COLUMN IF NOT EXISTS commission DECIMAL(10,2)`,
+    // orders columns — split into individual statements for MySQL 5.7 compat
+    `ALTER TABLE orders ADD COLUMN frais_livraison DECIMAL(10,2) DEFAULT 700.00`,
+    `ALTER TABLE orders ADD COLUMN adresse_livraison VARCHAR(500)`,
+    `ALTER TABLE orders ADD COLUMN livreur_id INT`,
+    `ALTER TABLE orders ADD COLUMN paiement_id INT`,
+    `ALTER TABLE orders ADD COLUMN commission DECIMAL(10,2)`,
     // Extend livreur_statut ENUM — covers all tracking phases
     `ALTER TABLE orders MODIFY COLUMN livreur_statut
        ENUM('non_assigne','assigne','vers_pharmacie','arrive_pharmacie','vers_patient','arrive_patient','livre')
        DEFAULT 'non_assigne'`,
     // paiement_statut column for escrow
-    `ALTER TABLE orders ADD COLUMN IF NOT EXISTS paiement_statut
-       ENUM('non_requis','bloque','libere','rembourse') DEFAULT 'bloque'`,
-    // appointments columns
-    `ALTER TABLE appointments
-       ADD COLUMN IF NOT EXISTS symptomes TEXT,
-       ADD COLUMN IF NOT EXISTS age_patient INT,
-       ADD COLUMN IF NOT EXISTS sexe_patient VARCHAR(10),
-       ADD COLUMN IF NOT EXISTS premiere_consult TINYINT(1) DEFAULT 1,
-       ADD COLUMN IF NOT EXISTS antecedents TEXT,
-       ADD COLUMN IF NOT EXISTS consultation_statut ENUM('attente','effectuee','confirmee') DEFAULT 'attente',
-       ADD COLUMN IF NOT EXISTS paiement_statut ENUM('non_requis','bloque','libere','rembourse') DEFAULT 'non_requis',
-       ADD COLUMN IF NOT EXISTS commission_taux DECIMAL(5,2) DEFAULT 10.00,
-       ADD COLUMN IF NOT EXISTS paiement_id INT`,
+    `ALTER TABLE orders ADD COLUMN paiement_statut ENUM('non_requis','bloque','libere','rembourse') DEFAULT 'bloque'`,
+    // appointments columns — each separate for MySQL 5.7 compat
+    `ALTER TABLE appointments ADD COLUMN symptomes TEXT`,
+    `ALTER TABLE appointments ADD COLUMN age_patient INT`,
+    `ALTER TABLE appointments ADD COLUMN sexe_patient VARCHAR(10)`,
+    `ALTER TABLE appointments ADD COLUMN premiere_consult TINYINT(1) DEFAULT 1`,
+    `ALTER TABLE appointments ADD COLUMN antecedents TEXT`,
+    `ALTER TABLE appointments ADD COLUMN consultation_statut ENUM('attente','effectuee','confirmee') DEFAULT 'attente'`,
+    `ALTER TABLE appointments ADD COLUMN paiement_statut ENUM('non_requis','bloque','libere','rembourse') DEFAULT 'non_requis'`,
+    `ALTER TABLE appointments ADD COLUMN commission_taux DECIMAL(5,2) DEFAULT 10.00`,
+    `ALTER TABLE appointments ADD COLUMN paiement_id INT`,
     // appointments statut ENUM with 'refuse'
     `ALTER TABLE appointments MODIFY COLUMN statut ENUM('en_attente','confirme','refuse','annule','termine') DEFAULT 'en_attente'`,
     // users role ENUM with all roles including emergency services and coach
@@ -409,11 +406,10 @@ async function ensureMigrations() {
        FOREIGN KEY (room_id) REFERENCES hospital_rooms(id) ON DELETE CASCADE,
        FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE
      ) ENGINE=InnoDB`,
-    `ALTER TABLE appointments
-       ADD COLUMN IF NOT EXISTS type_consultation ENUM('immediate','programme') DEFAULT 'programme',
-       ADD COLUMN IF NOT EXISTS room_id INT,
-       ADD COLUMN IF NOT EXISTS ticket_numero VARCHAR(20),
-       ADD COLUMN IF NOT EXISTS queue_position INT`,
+    `ALTER TABLE appointments ADD COLUMN type_consultation ENUM('immediate','programme') DEFAULT 'programme'`,
+    `ALTER TABLE appointments ADD COLUMN room_id INT`,
+    `ALTER TABLE appointments ADD COLUMN ticket_numero VARCHAR(20)`,
+    `ALTER TABLE appointments ADD COLUMN queue_position INT`,
     `ALTER TABLE hospital_services ADD COLUMN prix DECIMAL(10,2) DEFAULT 5000.00`,
     // Extend payments.statut ENUM to support hospital escrow states
     `ALTER TABLE payments MODIFY COLUMN statut ENUM('en_attente','bloque','confirme','libere','dispute','rembourse') DEFAULT 'en_attente'`,
@@ -428,9 +424,8 @@ async function ensureMigrations() {
        ELSE prix END
      WHERE prix = 5000 OR prix IS NULL`,
     // Queue entries: add timer + absence tracking
-    `ALTER TABLE queue_entries
-       ADD COLUMN IF NOT EXISTS called_at TIMESTAMP NULL,
-       ADD COLUMN IF NOT EXISTS absent_count INT DEFAULT 0`,
+    `ALTER TABLE queue_entries ADD COLUMN called_at TIMESTAMP NULL`,
+    `ALTER TABLE queue_entries ADD COLUMN absent_count INT DEFAULT 0`,
     `ALTER TABLE queue_entries MODIFY COLUMN statut
        ENUM('en_attente','appele','en_consultation','absent','termine') DEFAULT 'en_attente'`,
     // Referrals: proper hospital circuit
@@ -526,7 +521,7 @@ async function ensureMigrations() {
        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
        INDEX idx_vet_presc_animal (animal_id)
      ) ENGINE=InnoDB`,
-    `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS animal_id INT NULL`,
+    `ALTER TABLE appointments ADD COLUMN animal_id INT NULL`,
     // ── Salles et file d'attente vétérinaire ────────────────────────────────────
     `CREATE TABLE IF NOT EXISTS vet_rooms (
        id INT PRIMARY KEY AUTO_INCREMENT,
@@ -555,19 +550,19 @@ async function ensureMigrations() {
        INDEX idx_vq_appointment (appointment_id)
      ) ENGINE=InnoDB`,
     // vet_profiles: add urgences column
-    `ALTER TABLE vet_profiles ADD COLUMN IF NOT EXISTS urgences TINYINT(1) DEFAULT 0`,
-    `ALTER TABLE vet_profiles ADD COLUMN IF NOT EXISTS soins_domicile TINYINT(1) DEFAULT 0`,
+    `ALTER TABLE vet_profiles ADD COLUMN urgences TINYINT(1) DEFAULT 0`,
+    `ALTER TABLE vet_profiles ADD COLUMN soins_domicile TINYINT(1) DEFAULT 0`,
     // appointments: add animal info columns for vet context
-    `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS animal_nom VARCHAR(200) NULL`,
-    `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS animal_espece VARCHAR(100) NULL`,
+    `ALTER TABLE appointments ADD COLUMN animal_nom VARCHAR(200) NULL`,
+    `ALTER TABLE appointments ADD COLUMN animal_espece VARCHAR(100) NULL`,
     // prescriptions: extend for discharge ordonnance de sortie
     `ALTER TABLE prescriptions MODIFY COLUMN appointment_id INT NULL`,
-    `ALTER TABLE prescriptions ADD COLUMN IF NOT EXISTS hospitalization_id INT NULL`,
-    `ALTER TABLE prescriptions ADD COLUMN IF NOT EXISTS type VARCHAR(30) DEFAULT 'standard'`,
-    `ALTER TABLE prescriptions ADD COLUMN IF NOT EXISTS consignes TEXT NULL`,
-    `ALTER TABLE prescriptions ADD COLUMN IF NOT EXISTS rdv_controle DATE NULL`,
-    `ALTER TABLE prescriptions ADD COLUMN IF NOT EXISTS recommandations TEXT NULL`,
-    `ALTER TABLE prescriptions ADD COLUMN IF NOT EXISTS repos_jours INT NULL`,
+    `ALTER TABLE prescriptions ADD COLUMN hospitalization_id INT NULL`,
+    `ALTER TABLE prescriptions ADD COLUMN type VARCHAR(30) DEFAULT 'standard'`,
+    `ALTER TABLE prescriptions ADD COLUMN consignes TEXT NULL`,
+    `ALTER TABLE prescriptions ADD COLUMN rdv_controle DATE NULL`,
+    `ALTER TABLE prescriptions ADD COLUMN recommandations TEXT NULL`,
+    `ALTER TABLE prescriptions ADD COLUMN repos_jours INT NULL`,
     // ── Examens vétérinaires ────────────────────────────────────────────────
     `CREATE TABLE IF NOT EXISTS vet_exams (
        id INT PRIMARY KEY AUTO_INCREMENT,
@@ -604,15 +599,15 @@ async function ensureMigrations() {
     // vet_rooms: extend type enum
     `ALTER TABLE vet_rooms MODIFY COLUMN type ENUM('consultation','vaccination','urgence','chirurgie','soins','hospitalisation','examens') DEFAULT 'consultation'`,
     // vet_queue: add countdown columns
-    `ALTER TABLE vet_queue ADD COLUMN IF NOT EXISTS called_at TIMESTAMP NULL`,
-    `ALTER TABLE vet_queue ADD COLUMN IF NOT EXISTS absent_count INT DEFAULT 0`,
+    `ALTER TABLE vet_queue ADD COLUMN called_at TIMESTAMP NULL`,
+    `ALTER TABLE vet_queue ADD COLUMN absent_count INT DEFAULT 0`,
     `ALTER TABLE vet_queue MODIFY COLUMN statut ENUM('en_attente','appele','en_cours','absent','termine') DEFAULT 'en_attente'`,
     // vet_queue: deadline for 5-min countdown
-    `ALTER TABLE vet_queue ADD COLUMN IF NOT EXISTS deadline DATETIME NULL`,
+    `ALTER TABLE vet_queue ADD COLUMN deadline DATETIME NULL`,
     // vet_rooms: add pause to statut
     `ALTER TABLE vet_rooms MODIFY COLUMN statut ENUM('libre','occupee','pause','fermee') DEFAULT 'libre'`,
     // appointments: track room assignment for vet
-    `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS vet_room_id INT NULL`,
+    `ALTER TABLE appointments ADD COLUMN vet_room_id INT NULL`,
     // chirurgies vétérinaires
     `CREATE TABLE IF NOT EXISTS vet_surgeries (
        id INT PRIMARY KEY AUTO_INCREMENT,
