@@ -141,6 +141,18 @@ app.get('/setup-ibrahim-bah', async (req, res) => {
          teleconsultation = 1, domicile = 0`,
       [userId]
     )
+    // Diagnostic: check pending requests AND fix statut if empty
+    const [pendingRaw] = await pool.query(
+      'SELECT id, patient_id, provider_id, statut, created_at FROM personal_assignments WHERE provider_id = ?',
+      [userId]
+    )
+    // Fix: if statut is '' (empty) because ENUM wasn't ready, reset to 'pending'
+    for (const row of pendingRaw) {
+      if (row.statut === '' || row.statut === null) {
+        await pool.query("UPDATE personal_assignments SET statut = 'pending' WHERE id = ?", [row.id])
+        row.statut = 'pending (fixed)'
+      }
+    }
     res.json({
       success: true,
       email: EMAIL,
@@ -149,6 +161,7 @@ app.get('/setup-ibrahim-bah', async (req, res) => {
       specialite: 'Neurologie',
       cabinet: 'Neuro Marcory',
       userId,
+      assignments_as_provider: pendingRaw,
     })
   } catch (e) {
     console.error('[setup-ibrahim-bah]', e.message)
