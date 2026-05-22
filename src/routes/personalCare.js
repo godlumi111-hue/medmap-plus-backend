@@ -41,7 +41,7 @@ const { notifyAndEmit } = require('../utils/notify')
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `)
-    await pool.query('ALTER TABLE personal_assignments ADD COLUMN IF NOT EXISTS montant_total DECIMAL(10,2) DEFAULT 0').catch(() => {})
+    await pool.query('ALTER TABLE personal_assignments ADD COLUMN montant_total DECIMAL(10,2) DEFAULT 0').catch(() => {})
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS personal_escrow (
@@ -83,25 +83,26 @@ const { notifyAndEmit } = require('../utils/notify')
       )
     `)
 
+    // Add meeting columns first (before MODIFY COLUMN to avoid constraint issues)
+    // Use ADD COLUMN without IF NOT EXISTS — .catch handles "column already exists" on all MySQL/MariaDB versions
+    await pool.query('ALTER TABLE personal_assignments ADD COLUMN meeting_date DATE NULL').catch(() => {})
+    await pool.query('ALTER TABLE personal_assignments ADD COLUMN meeting_heure TIME NULL').catch(() => {})
+    await pool.query('ALTER TABLE personal_assignments ADD COLUMN meeting_patient_arrived TINYINT DEFAULT 0').catch(() => {})
+    await pool.query('ALTER TABLE personal_assignments ADD COLUMN meeting_provider_arrived TINYINT DEFAULT 0').catch(() => {})
+
+    // Auto-repair BEFORE MODIFY COLUMN: fix '' statuts so NOT NULL constraint doesn't reject them
+    await pool.query(
+      "UPDATE personal_assignments SET statut = 'pending' WHERE statut = '' OR statut IS NULL"
+    ).catch(() => {})
+
     // Extend statut ENUM: full flow including meeting steps
     await pool.query(
       "ALTER TABLE personal_assignments MODIFY COLUMN statut ENUM('pending','accepted','meeting_scheduled','meeting_done','actif','termine','annule','rejete') NOT NULL DEFAULT 'pending'"
     ).catch(() => {})
 
-    // Auto-repair: rows stored with '' statut (happened when 'pending' wasn't in ENUM yet)
-    await pool.query(
-      "UPDATE personal_assignments SET statut = 'pending' WHERE statut = '' OR statut IS NULL"
-    ).catch(() => {})
-
-    // Add meeting columns
-    await pool.query('ALTER TABLE personal_assignments ADD COLUMN IF NOT EXISTS meeting_date DATE NULL').catch(() => {})
-    await pool.query('ALTER TABLE personal_assignments ADD COLUMN IF NOT EXISTS meeting_heure TIME NULL').catch(() => {})
-    await pool.query('ALTER TABLE personal_assignments ADD COLUMN IF NOT EXISTS meeting_patient_arrived TINYINT DEFAULT 0').catch(() => {})
-    await pool.query('ALTER TABLE personal_assignments ADD COLUMN IF NOT EXISTS meeting_provider_arrived TINYINT DEFAULT 0').catch(() => {})
-
     // Add complaint/bonus columns on care_sessions
-    await pool.query('ALTER TABLE care_sessions ADD COLUMN IF NOT EXISTS patient_complaint TINYINT DEFAULT 0').catch(() => {})
-    await pool.query('ALTER TABLE care_sessions ADD COLUMN IF NOT EXISTS patient_validated TINYINT DEFAULT 0').catch(() => {})
+    await pool.query('ALTER TABLE care_sessions ADD COLUMN patient_complaint TINYINT DEFAULT 0').catch(() => {})
+    await pool.query('ALTER TABLE care_sessions ADD COLUMN patient_validated TINYINT DEFAULT 0').catch(() => {})
 
     // Extend users.role ENUM to include 'coach' if not already present
     await pool.query(
@@ -305,7 +306,7 @@ router.post('/:id/schedule-meeting', requireAuth, async (req, res) => {
     res.json({ success: true, statut: 'meeting_scheduled', meeting_date, meeting_heure })
   } catch (err) {
     console.error('[POST /:id/schedule-meeting]', err)
-    res.status(500).json({ detail: 'Erreur serveur' })
+    res.status(500).json({ detail: err.message || 'Erreur serveur' })
   }
 })
 
