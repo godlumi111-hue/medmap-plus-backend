@@ -281,7 +281,7 @@ router.get('/structures', async (req, res) => {
     let sql = `
       SELECT u.id as user_id, u.nom, u.email,
              sp.id as struct_id, sp.type, sp.nom as struct_nom, sp.adresse,
-             sp.ville, sp.telephone, sp.email as struct_email,
+             sp.ville, sp.telephone,
              sp.partenaire, sp.note, sp.lat, sp.lng
       FROM users u
       JOIN structure_profiles sp ON sp.user_id = u.id
@@ -308,7 +308,7 @@ router.get('/structures/:id', async (req, res) => {
     const [rows] = await pool.query(
       `SELECT u.id as user_id, u.nom, u.email,
               sp.id as struct_id, sp.type, sp.nom as struct_nom, sp.adresse,
-              sp.ville, sp.telephone, sp.email as struct_email,
+              sp.ville, sp.telephone,
               sp.partenaire, sp.note, sp.lat, sp.lng
        FROM users u
        JOIN structure_profiles sp ON sp.user_id = u.id
