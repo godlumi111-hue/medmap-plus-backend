@@ -88,6 +88,11 @@ const { notifyAndEmit } = require('../utils/notify')
       "ALTER TABLE personal_assignments MODIFY COLUMN statut ENUM('pending','accepted','meeting_scheduled','meeting_done','actif','termine','annule','rejete') NOT NULL DEFAULT 'pending'"
     ).catch(() => {})
 
+    // Auto-repair: rows stored with '' statut (happened when 'pending' wasn't in ENUM yet)
+    await pool.query(
+      "UPDATE personal_assignments SET statut = 'pending' WHERE statut = '' OR statut IS NULL"
+    ).catch(() => {})
+
     // Add meeting columns
     await pool.query('ALTER TABLE personal_assignments ADD COLUMN IF NOT EXISTS meeting_date DATE NULL').catch(() => {})
     await pool.query('ALTER TABLE personal_assignments ADD COLUMN IF NOT EXISTS meeting_heure TIME NULL').catch(() => {})
@@ -1075,7 +1080,7 @@ router.get('/provider/requests', requireAuth, async (req, res) => {
       `SELECT pa.*, u.nom, u.prenom, u.email, u.telephone, u.avatar_url
        FROM personal_assignments pa
        JOIN users u ON u.id = pa.patient_id
-       WHERE pa.provider_id = ? AND pa.statut = 'pending'
+       WHERE pa.provider_id = ? AND (pa.statut = 'pending' OR pa.statut = '')
        ORDER BY pa.created_at DESC`,
       [req.user.id]
     )
