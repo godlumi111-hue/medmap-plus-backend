@@ -3,7 +3,7 @@ const router = express.Router()
 const pool = require('../db')
 const { requireAuth } = require('../middleware/auth')
 
-// Auto-create deposit_requests table
+// Auto-create tables
 ;(async () => {
   try {
     await pool.query(`
@@ -20,10 +20,26 @@ const { requireAuth } = require('../middleware/auth')
         confirmed_at TIMESTAMP NULL
       )
     `)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS withdrawal_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        methode ENUM('wave','orange','mtn','moov') NOT NULL,
+        telephone VARCHAR(30) NOT NULL,
+        montant_demande DECIMAL(10,2) NOT NULL,
+        frais DECIMAL(10,2) NOT NULL,
+        montant_verse DECIMAL(10,2) NOT NULL,
+        reference VARCHAR(50) NOT NULL,
+        statut ENUM('en_attente','traite','echec') DEFAULT 'en_attente',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        processed_at TIMESTAMP NULL
+      )
+    `)
   } catch {}
 })()
 
-const DEPOSIT_FEE_RATE = 0.015  // 1.5%
+const DEPOSIT_FEE_RATE    = 0.015  // 1.5%
+const WITHDRAWAL_FEE_RATE = 0.01   // 1%
 
 function generateRef(methode) {
   const prefix = { wave: 'WV', orange: 'OM', mtn: 'MTN', moov: 'MV' }[methode] || 'TX'
@@ -217,6 +233,69 @@ router.get('/deposits', requireAuth, async (req, res) => {
       montant_demande: parseFloat(r.montant_demande),
       frais: parseFloat(r.frais),
       montant_credit: parseFloat(r.montant_credit),
+    })))
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ detail: 'Erreur serveur' })
+  }
+})
+
+// POST /wallet/withdraw — initiate mobile money withdrawal
+router.post('/withdraw', requireAuth, async (req, res) => {
+  const { methode, montant, telephone } = req.body
+  if (!['wave', 'orange', 'mtn', 'moov'].includes(methode)) {
+    return res.status(422).json({ detail: 'Méthode invalide. Choisir : wave, orange, mtn, moov.' })
+  }
+  if (!montant || montant < 1000) {
+    return res.status(422).json({ detail: 'Montant minimum de retrait : 1 000 F CFA.' })
+  }
+  if (!telephone || telephone.trim().length < 8) {
+    return res.status(422).json({ detail: 'Numéro de téléphone requis.' })
+  }
+  try {
+    const w = await getOrCreateWallet(req.user.id)
+    if (parseFloat(w.solde) < parseFloat(montant)) {
+      return res.status(400).json({ detail: 'Solde insuffisant.' })
+    }
+    const frais = Math.round(parseFloat(montant) * WITHDRAWAL_FEE_RATE)
+    const montant_verse = parseFloat(montant) - frais
+    const reference = generateRef(methode)
+
+    // Deduct wallet immediately
+    const newSolde = parseFloat(w.solde) - parseFloat(montant)
+    await pool.query('UPDATE wallets SET solde = ? WHERE id = ?', [newSolde, w.id])
+    await addTransaction(w.id, montant, 'debit', `Retrait ${methode.toUpperCase()} vers ${telephone} — réf. ${reference}`)
+
+    const [result] = await pool.query(
+      "INSERT INTO withdrawal_requests (user_id, methode, telephone, montant_demande, frais, montant_verse, reference, statut, processed_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'traite', NOW())",
+      [req.user.id, methode, telephone.trim(), montant, frais, montant_verse, reference]
+    )
+    const [rows] = await pool.query('SELECT * FROM withdrawal_requests WHERE id = ?', [result.insertId])
+    res.status(201).json({
+      ...rows[0],
+      montant_demande: parseFloat(rows[0].montant_demande),
+      frais: parseFloat(rows[0].frais),
+      montant_verse: parseFloat(rows[0].montant_verse),
+      nouveau_solde: newSolde,
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ detail: 'Erreur serveur' })
+  }
+})
+
+// GET /wallet/withdrawals — list user's withdrawal requests
+router.get('/withdrawals', requireAuth, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM withdrawal_requests WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
+      [req.user.id]
+    )
+    res.json(rows.map(r => ({
+      ...r,
+      montant_demande: parseFloat(r.montant_demande),
+      frais: parseFloat(r.frais),
+      montant_verse: parseFloat(r.montant_verse),
     })))
   } catch (err) {
     console.error(err)
