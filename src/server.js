@@ -92,19 +92,34 @@ async function ensureTestAccounts() {
     { email: 'patient2.demo@medmap.ci',             nom: 'Bamba',       prenom: 'Seydou',            role: 'patient',     tel: '+225 07 99 00 11' },
     { email: 'dr.kwadjo@medmap.ci',                 nom: 'Kwadjo',      prenom: 'Ama',               role: 'medecin',     tel: '+225 07 11 22 33' },
     { email: 'dr.coulibaly@medmap.ci',              nom: 'Coulibaly',   prenom: 'Ibrahim',           role: 'medecin',     tel: '+225 05 44 55 66' },
+    // Pharmacies
     { email: 'pharmacie.cocody@medmap.ci',          nom: 'Pharmacie',   prenom: 'Cocody Village',    role: 'pharmacie',   tel: '+225 22 43 56 78' },
     { email: 'pharmacie.riviera@medmap.ci',         nom: 'Pharmacie',   prenom: 'Riviera Palmeraie', role: 'pharmacie',   tel: '+225 22 41 30 20' },
-    { email: 'chu.cocody@medmap.ci',                nom: 'CHU Cocody',  prenom: 'Admin',             role: 'clinique',    tel: '+225 22 44 55 00' },
-    { email: 'polyclinique.farah@medmap.ci',        nom: 'Polyclinique',prenom: 'Farah',             role: 'clinique',    tel: '+225 22 42 30 40' },
+    // Hospitals — all entries from HOSPITALS static data
+    { email: 'chu.treichville@medmap.ci',           nom: 'CHU',         prenom: 'Treichville',       role: 'clinique',    tel: '+225 27 21 24 22 22' },
+    { email: 'pisam@medmap.ci',                     nom: 'PISAM',       prenom: 'Admin',             role: 'clinique',    tel: '+225 27 22 44 10 10' },
+    { email: 'polyclinique.farah@medmap.ci',        nom: 'Polyclinique',prenom: 'Farah',             role: 'clinique',    tel: '+225 27 20 31 05 05' },
+    { email: 'chu.cocody@medmap.ci',                nom: 'CHU',         prenom: 'Cocody',            role: 'clinique',    tel: '+225 27 22 44 34 34' },
+    { email: 'clinique.internationale@medmap.ci',   nom: 'Clinique',    prenom: 'Internationale',    role: 'clinique',    tel: '+225 27 22 40 28 28' },
+    { email: 'clinique.saintviateur@medmap.ci',     nom: 'Clinique',    prenom: 'Saint Viateur',     role: 'clinique',    tel: '+225 27 22 41 88 88' },
+    { email: 'polyclinique.sogefia@medmap.ci',      nom: 'Polyclinique',prenom: 'Sogefia',           role: 'clinique',    tel: '+225 27 21 35 44 44' },
+    { email: 'clinique.avicenne@medmap.ci',         nom: 'Clinique',    prenom: 'Avicenne',          role: 'clinique',    tel: '+225 27 22 48 39 39' },
+    { email: 'polyclinique.agban@medmap.ci',        nom: 'Polyclinique',prenom: 'Agban',             role: 'clinique',    tel: '+225 27 23 67 88 99' },
+    { email: 'clinique.cathedrale@medmap.ci',       nom: 'Clinique',    prenom: 'Cathedrale',        role: 'clinique',    tel: '+225 27 20 22 11 55' },
+    { email: 'ica@medmap.ci',                       nom: 'ICA',         prenom: 'Cardiologie',       role: 'clinique',    tel: '+225 27 21 24 72 72' },
+    { email: 'clinique.deuxplateaux@medmap.ci',     nom: 'Clinique',    prenom: 'Deux Plateaux',     role: 'clinique',    tel: '+225 27 22 41 50 50' },
+    { email: 'clinique.riviera@medmap.ci',          nom: 'Clinique',    prenom: 'Mere-Enfant',       role: 'clinique',    tel: '+225 27 22 43 60 60' },
+    // Livreurs
     { email: 'livreur.kouassi@medmap.ci',           nom: 'Kouassi',     prenom: 'Koffi',             role: 'livreur',     tel: '+225 07 55 66 77' },
     { email: 'livreur.diarra@medmap.ci',            nom: 'Diarra',      prenom: 'Mamadou',           role: 'livreur',     tel: '+225 01 33 44 55' },
     { email: 'admin@medmap.ci',                     nom: 'Admin',       prenom: 'MedMap',            role: 'admin',       tel: '+225 22 00 00 01' },
+    // Vétérinaires
     { email: 'vetcity.abidjan@medmap.ci',           nom: 'VétCity',     prenom: 'Abidjan',           role: 'veterinaire', tel: '+225 22 50 60 70' },
     { email: 'cabinet.vet.riviera@medmap.ci',       nom: 'Cabinet Vét', prenom: 'Riviera',           role: 'veterinaire', tel: '+225 22 43 80 90' },
     { email: 'clinique.animale.riviera@medmap.ci',  nom: 'Clinique',    prenom: 'Animale',           role: 'veterinaire', tel: '+225 22 43 70 80' },
     { email: 'veto.deuxplateaux@medmap.ci',         nom: 'Centre',      prenom: 'Deux Plateaux',     role: 'veterinaire', tel: '+225 22 41 90 00' },
     { email: 'veto.marcory@medmap.ci',              nom: 'Clinique',    prenom: 'Marcory',           role: 'veterinaire', tel: '+225 22 35 10 20' },
-    { email: 'cabinet.angre@medmap.ci',             nom: 'Cabinet',     prenom: 'Angré',             role: 'veterinaire', tel: '+225 07 88 99 10' },
+    { email: 'cabinet.angre@medmap.ci',             nom: 'Cabinet',     prenom: 'Angre',             role: 'veterinaire', tel: '+225 07 88 99 10' },
     { email: 'clinique.bingerville@medmap.ci',      nom: 'Clinique',    prenom: 'Bingerville',       role: 'veterinaire', tel: '+225 22 51 40 50' },
     { email: 'centre.vet.plateau@medmap.ci',        nom: 'Centre',      prenom: 'Plateau',           role: 'veterinaire', tel: '+225 22 20 30 40' },
     { email: 'veto.yopougon@medmap.ci',             nom: 'Clinique',    prenom: 'Yopougon',          role: 'veterinaire', tel: '+225 22 46 20 30' },
@@ -112,81 +127,148 @@ async function ensureTestAccounts() {
   ]
 
   const specialites = { 'dr.kwadjo@medmap.ci': 'Cardiologie', 'dr.coulibaly@medmap.ci': 'Médecine générale' }
-  const cliniques   = {
-    'chu.cocody@medmap.ci': 'CHU de Cocody', 'polyclinique.farah@medmap.ci': 'Polyclinique Farah',
-    'vetcity.abidjan@medmap.ci':              'Clinique VétCity Abidjan',
-    'cabinet.vet.riviera@medmap.ci':          'Cabinet Vétérinaire Riviera',
-    'clinique.animale.riviera@medmap.ci':     'Clinique Animale Riviera',
-    'veto.deuxplateaux@medmap.ci':            'Centre Vétérinaire Deux Plateaux',
-    'veto.marcory@medmap.ci':                 'Clinique Vétérinaire Marcory',
-    'cabinet.angre@medmap.ci':                'Cabinet Vétérinaire Angré',
-    'clinique.bingerville@medmap.ci':         'Clinique Animale Bingerville',
-    'centre.vet.plateau@medmap.ci':           'Centre Vétérinaire Plateau',
-    'veto.yopougon@medmap.ci':                'Clinique Vétérinaire Yopougon',
-    'cabinet.riviera.palmeraie@medmap.ci':    'Cabinet Vétérinaire Riviera Palmeraie',
+
+  // Exact names must match HOSPITALS static data in the frontend
+  const structureNoms = {
+    'pharmacie.cocody@medmap.ci':          'Pharmacie Cocody Village',
+    'pharmacie.riviera@medmap.ci':         'Pharmacie Riviera Palmeraie',
+    'chu.treichville@medmap.ci':           'CHU de Treichville',
+    'pisam@medmap.ci':                     'PISAM',
+    'polyclinique.farah@medmap.ci':        'Polyclinique Farah',
+    'chu.cocody@medmap.ci':                'CHU de Cocody',
+    'clinique.internationale@medmap.ci':   'Clinique Internationale',
+    'clinique.saintviateur@medmap.ci':     'Clinique Saint Viateur',
+    'polyclinique.sogefia@medmap.ci':      'Polyclinique Sogefia',
+    'clinique.avicenne@medmap.ci':         'Clinique Avicenne',
+    'polyclinique.agban@medmap.ci':        'Polyclinique Agban',
+    'clinique.cathedrale@medmap.ci':       "Clinique de la Cathédrale",
+    'ica@medmap.ci':                       "Institut de Cardiologie d'Abidjan",
+    'clinique.deuxplateaux@medmap.ci':     'Clinique des Deux Plateaux',
+    'clinique.riviera@medmap.ci':          'Clinique Mère-Enfant La Riviera',
+    'vetcity.abidjan@medmap.ci':           'Clinique VétCity Abidjan',
+    'cabinet.vet.riviera@medmap.ci':       'Cabinet Vétérinaire Riviera',
+    'clinique.animale.riviera@medmap.ci':  'Clinique Animale Riviera',
+    'veto.deuxplateaux@medmap.ci':         'Centre Vétérinaire Deux Plateaux',
+    'veto.marcory@medmap.ci':              'Clinique Vétérinaire Marcory',
+    'cabinet.angre@medmap.ci':             'Cabinet Vétérinaire Angré',
+    'clinique.bingerville@medmap.ci':      'Clinique Animale Bingerville',
+    'centre.vet.plateau@medmap.ci':        'Centre Vétérinaire Plateau',
+    'veto.yopougon@medmap.ci':             'Clinique Vétérinaire Yopougon',
+    'cabinet.riviera.palmeraie@medmap.ci': 'Cabinet Vétérinaire Riviera Palmeraie',
   }
 
   const vetConfigs = {
-    'vetcity.abidjan@medmap.ci':              { ville: 'Plateau',          adresse: 'Bd de la République, Plateau',          services: ['Consultation','Vaccination','Chirurgie','Urgences 24h','Radiologie','Analyses'], horaires: '7h-20h',  urgences: true,  note: 4.8 },
-    'cabinet.vet.riviera@medmap.ci':          { ville: 'Riviera',          adresse: 'Riviera 2, Cocody',                      services: ['Consultation','Vaccination','Bilan de santé','Dentaire'],                        horaires: '8h-18h',  urgences: false, note: 4.5 },
-    'clinique.animale.riviera@medmap.ci':     { ville: 'Riviera',          adresse: 'Riviera Palmeraie, Cocody',              services: ['Consultation','Vaccination','Chirurgie','Urgences','Échographie'],               horaires: '7h-21h',  urgences: true,  note: 4.7 },
-    'veto.deuxplateaux@medmap.ci':            { ville: 'Deux Plateaux',    adresse: '7ème Tranche, Deux Plateaux',           services: ['Consultation','Vaccination','Dermatologie','Orthopédie','Toilettage'],           horaires: '8h-19h',  urgences: true,  note: 4.6 },
-    'veto.marcory@medmap.ci':                 { ville: 'Marcory',          adresse: 'Marcory Zone 4',                         services: ['Consultation','Vaccination','Petite chirurgie','Analyses'],                      horaires: '8h-18h',  urgences: false, note: 4.3 },
-    'cabinet.angre@medmap.ci':                { ville: 'Angré',            adresse: 'Angré 8ème Tranche',                     services: ['Consultation','Vaccination','Stérilisation','Comportement'],                    horaires: '9h-18h',  urgences: false, note: 4.4 },
-    'clinique.bingerville@medmap.ci':         { ville: 'Bingerville',      adresse: 'Route de Bingerville',                   services: ['Consultation','Vaccination','Chirurgie','Radiologie'],                          horaires: '8h-17h',  urgences: false, note: 4.2 },
-    'centre.vet.plateau@medmap.ci':           { ville: 'Plateau',          adresse: 'Avenue Noguès, Plateau',                 services: ['Consultation','Vaccination','Ophtalmologie','Cardiologie','Urgences'],           horaires: '24h/24',  urgences: true,  note: 4.9 },
-    'veto.yopougon@medmap.ci':                { ville: 'Yopougon',         adresse: 'Yopougon Marché, Zone Industrielle',     services: ['Consultation','Vaccination','Toilettage','Petite chirurgie'],                   horaires: '8h-19h',  urgences: false, note: 4.1 },
-    'cabinet.riviera.palmeraie@medmap.ci':    { ville: 'Riviera Palmeraie',adresse: 'Palmeraie Golf, Cocody',                 services: ['Consultation','Vaccination','Chirurgie','Urgences','Bien-être animal'],          horaires: '8h-20h',  urgences: true,  note: 4.6 },
+    'vetcity.abidjan@medmap.ci':              { ville: 'Plateau',          adresse: 'Bd de la République, Plateau',          services: ['Consultation','Vaccination','Chirurgie','Urgences 24h','Radiologie','Analyses'], horaires: '7h-20h',  note: 4.8 },
+    'cabinet.vet.riviera@medmap.ci':          { ville: 'Riviera',          adresse: 'Riviera 2, Cocody',                      services: ['Consultation','Vaccination','Bilan de santé','Dentaire'],                        horaires: '8h-18h',  note: 4.5 },
+    'clinique.animale.riviera@medmap.ci':     { ville: 'Riviera',          adresse: 'Riviera Palmeraie, Cocody',              services: ['Consultation','Vaccination','Chirurgie','Urgences','Échographie'],               horaires: '7h-21h',  note: 4.7 },
+    'veto.deuxplateaux@medmap.ci':            { ville: 'Deux Plateaux',    adresse: '7ème Tranche, Deux Plateaux',            services: ['Consultation','Vaccination','Dermatologie','Orthopédie','Toilettage'],           horaires: '8h-19h',  note: 4.6 },
+    'veto.marcory@medmap.ci':                 { ville: 'Marcory',          adresse: 'Marcory Zone 4',                         services: ['Consultation','Vaccination','Petite chirurgie','Analyses'],                      horaires: '8h-18h',  note: 4.3 },
+    'cabinet.angre@medmap.ci':                { ville: 'Angré',            adresse: 'Angré 8ème Tranche',                     services: ['Consultation','Vaccination','Stérilisation','Comportement'],                    horaires: '9h-18h',  note: 4.4 },
+    'clinique.bingerville@medmap.ci':         { ville: 'Bingerville',      adresse: 'Route de Bingerville',                   services: ['Consultation','Vaccination','Chirurgie','Radiologie'],                          horaires: '8h-17h',  note: 4.2 },
+    'centre.vet.plateau@medmap.ci':           { ville: 'Plateau',          adresse: 'Avenue Noguès, Plateau',                 services: ['Consultation','Vaccination','Ophtalmologie','Cardiologie','Urgences'],           horaires: '24h/24',  note: 4.9 },
+    'veto.yopougon@medmap.ci':                { ville: 'Yopougon',         adresse: 'Yopougon Marché, Zone Industrielle',     services: ['Consultation','Vaccination','Toilettage','Petite chirurgie'],                   horaires: '8h-19h',  note: 4.1 },
+    'cabinet.riviera.palmeraie@medmap.ci':    { ville: 'Riviera Palmeraie',adresse: 'Palmeraie Golf, Cocody',                 services: ['Consultation','Vaccination','Chirurgie','Urgences','Bien-être animal'],          horaires: '8h-20h',  note: 4.6 },
   }
 
   let created = 0
   for (const u of accounts) {
     try {
+      // Get or create user
+      let uid
       const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [u.email])
-      if (existing.length) continue
-
-      const passwordHash = await hash(PASS)
-      const [res] = await pool.query(
-        'INSERT INTO users (email, password_hash, nom, prenom, telephone, role, is_active, is_verified) VALUES (?, ?, ?, ?, ?, ?, 1, 1)',
-        [u.email, passwordHash, u.nom, u.prenom, u.tel, u.role]
-      )
-      const uid = res.insertId
-      await pool.query('INSERT INTO wallets (user_id, solde) VALUES (?, ?)', [uid, 50000])
-
-      if (u.role === 'medecin') {
-        await pool.query(
-          'INSERT INTO doctor_profiles (user_id, specialite, cabinet, ville, tarif, disponible, experience_ans) VALUES (?, ?, ?, ?, ?, 1, ?)',
-          [uid, specialites[u.email] || 'Généraliste', `Cabinet ${u.prenom} ${u.nom}`, 'Abidjan', 15000, 10]
+      if (existing.length) {
+        uid = existing[0].id
+      } else {
+        const passwordHash = await hash(PASS)
+        const [res] = await pool.query(
+          'INSERT INTO users (email, password_hash, nom, prenom, telephone, role, is_active, is_verified) VALUES (?, ?, ?, ?, ?, ?, 1, 1)',
+          [u.email, passwordHash, u.nom, u.prenom, u.tel, u.role]
         )
-      } else if (u.role === 'pharmacie') {
-        const [sp] = await pool.query(
-          'INSERT INTO structure_profiles (user_id, type, nom, adresse, ville, telephone, partenaire, note) VALUES (?, ?, ?, ?, ?, ?, 1, ?)',
-          [uid, 'pharmacie', u.prenom, 'Abidjan', 'Abidjan', u.tel, 4.7]
-        )
-        await pool.query('INSERT INTO pharmacy_profiles (structure_id, garde, horaires) VALUES (?, 1, ?)', [sp.insertId, '24h/24'])
-      } else if (u.role === 'clinique') {
-        const [sp] = await pool.query(
-          'INSERT INTO structure_profiles (user_id, type, nom, adresse, ville, telephone, partenaire, note) VALUES (?, ?, ?, ?, ?, ?, 1, ?)',
-          [uid, 'clinique', cliniques[u.email] || u.prenom, 'Abidjan', 'Abidjan', u.tel, 4.5]
-        )
-        await pool.query('INSERT INTO clinic_profiles (structure_id, urgence24h, nombre_lits, horaires) VALUES (?, 1, 200, ?)', [sp.insertId, '24h/24'])
-      } else if (u.role === 'veterinaire') {
-        const vc = vetConfigs[u.email] || { ville: 'Abidjan', adresse: 'Abidjan', services: ['Consultation générale', 'Vaccination', 'Chirurgie', 'Urgences animales'], horaires: '8h-18h', urgences: false, note: 4.5 }
-        const [sp] = await pool.query(
-          'INSERT INTO structure_profiles (user_id, type, nom, adresse, ville, telephone, partenaire, note) VALUES (?, ?, ?, ?, ?, ?, 1, ?)',
-          [uid, 'veterinaire', cliniques[u.email] || u.prenom, vc.adresse, vc.ville, u.tel, vc.note]
-        )
-        await pool.query(
-          'INSERT INTO vet_profiles (structure_id, services, horaires) VALUES (?, ?, ?)',
-          [sp.insertId, JSON.stringify(vc.services), vc.horaires]
-        )
-      } else if (u.role === 'livreur') {
-        await pool.query('INSERT INTO livreur_profiles (user_id, vehicule, zone, statut) VALUES (?, ?, ?, ?)', [uid, 'Moto', 'Abidjan', 'disponible'])
+        uid = res.insertId
+        await pool.query('INSERT INTO wallets (user_id, solde) VALUES (?, ?) ON DUPLICATE KEY UPDATE user_id=user_id', [uid, 50000]).catch(() => {})
+        created++
       }
-      created++
-    } catch (_) {}
+
+      // Always ensure profiles are correct (even for pre-existing users)
+      if (u.role === 'medecin') {
+        const [dp] = await pool.query('SELECT id FROM doctor_profiles WHERE user_id = ?', [uid])
+        if (!dp.length) {
+          await pool.query(
+            'INSERT INTO doctor_profiles (user_id, specialite, cabinet, ville, tarif, disponible, experience_ans) VALUES (?, ?, ?, ?, ?, 1, ?)',
+            [uid, specialites[u.email] || 'Généraliste', `Cabinet ${u.prenom} ${u.nom}`, 'Abidjan', 15000, 10]
+          )
+        }
+      } else if (['pharmacie', 'clinique', 'veterinaire'].includes(u.role)) {
+        const nom = structureNoms[u.email] || u.prenom
+        const [spRows] = await pool.query('SELECT id FROM structure_profiles WHERE user_id = ?', [uid])
+        if (spRows.length) {
+          // Fix name if wrong (e.g. from an earlier run that used a different name)
+          await pool.query(
+            'UPDATE structure_profiles SET nom = ?, partenaire = 1 WHERE user_id = ? AND nom != ?',
+            [nom, uid, nom]
+          )
+        } else {
+          const vc = vetConfigs[u.email] || {}
+          const [sp] = await pool.query(
+            'INSERT INTO structure_profiles (user_id, type, nom, adresse, ville, telephone, partenaire, note) VALUES (?, ?, ?, ?, ?, ?, 1, ?)',
+            [uid, u.role, nom, vc.adresse || 'Abidjan', vc.ville || 'Abidjan', u.tel, vc.note || 4.5]
+          )
+          const spId = sp.insertId
+          if (u.role === 'pharmacie') {
+            await pool.query('INSERT INTO pharmacy_profiles (structure_id, garde, horaires) VALUES (?, 1, ?)', [spId, '24h/24'])
+          } else if (u.role === 'clinique') {
+            await pool.query('INSERT INTO clinic_profiles (structure_id, urgence24h, nombre_lits, horaires) VALUES (?, 1, 200, ?)', [spId, '24h/24'])
+          } else if (u.role === 'veterinaire') {
+            await pool.query('INSERT INTO vet_profiles (structure_id, services, horaires) VALUES (?, ?, ?)',
+              [spId, JSON.stringify(vc.services || ['Consultation']), vc.horaires || '8h-18h'])
+          }
+        }
+      } else if (u.role === 'livreur') {
+        const [lp] = await pool.query('SELECT id FROM livreur_profiles WHERE user_id = ?', [uid])
+        if (!lp.length) {
+          await pool.query('INSERT INTO livreur_profiles (user_id, vehicule, zone, statut) VALUES (?, ?, ?, ?)', [uid, 'Moto', 'Abidjan', 'disponible'])
+        }
+      }
+    } catch (err) {
+      console.warn(`   ⚠️  ensureTestAccounts [${u.email}]: ${err.message}`)
+    }
   }
-  if (created > 0) console.log(`   ✅ ${created} compte(s) test recréé(s) automatiquement`)
+
+  // Fix auto-init seeded accounts (from init.sql) that may have been created without structure_profiles
+  const autoFixStructures = [
+    { email: 'clinique.avicenne@test.ci', nom: 'Clinique Avicenne',  type: 'clinique',  tel: '+225 27 22 48 39 39' },
+    { email: 'chu.cocody@test.ci',        nom: 'CHU de Cocody',      type: 'clinique',  tel: '+225 27 22 44 34 34' },
+    { email: 'pharmacie.plateau@test.ci', nom: 'Pharmacie Plateau',  type: 'pharmacie', tel: '+225 22 41 00 00' },
+    { email: 'pharmacie.cocody@test.ci',  nom: 'Pharmacie Cocody',   type: 'pharmacie', tel: '+225 22 43 56 78' },
+    { email: 'vet.abidjan@test.ci',       nom: 'VétCity Abidjan',    type: 'veterinaire', tel: '+225 22 50 60 70' },
+  ]
+  for (const fix of autoFixStructures) {
+    try {
+      const [uRows] = await pool.query('SELECT id FROM users WHERE email = ?', [fix.email])
+      if (!uRows.length) continue
+      const uid = uRows[0].id
+      const [spRows] = await pool.query('SELECT id FROM structure_profiles WHERE user_id = ?', [uid])
+      if (spRows.length) {
+        await pool.query('UPDATE structure_profiles SET nom = ?, partenaire = 1 WHERE user_id = ? AND nom != ?', [fix.nom, uid, fix.nom])
+      } else {
+        const [sp] = await pool.query(
+          'INSERT INTO structure_profiles (user_id, type, nom, adresse, ville, telephone, partenaire, note) VALUES (?, ?, ?, ?, ?, ?, 1, ?)',
+          [uid, fix.type, fix.nom, 'Abidjan', 'Abidjan', fix.tel, 4.5]
+        )
+        if (fix.type === 'pharmacie') {
+          await pool.query('INSERT INTO pharmacy_profiles (structure_id, garde, horaires) VALUES (?, 1, ?)', [sp.insertId, '24h/24'])
+        } else if (fix.type === 'clinique') {
+          await pool.query('INSERT INTO clinic_profiles (structure_id, urgence24h, nombre_lits, horaires) VALUES (?, 1, 200, ?)', [sp.insertId, '24h/24'])
+        } else {
+          await pool.query('INSERT INTO vet_profiles (structure_id, services, horaires) VALUES (?, ?, ?)', [sp.insertId, JSON.stringify(['Consultation']), '8h-18h'])
+        }
+      }
+    } catch (err) {
+      console.warn(`   ⚠️  autoFix [${fix.email}]: ${err.message}`)
+    }
+  }
+
+  console.log(`   ✅ ensureTestAccounts: ${created} nouveau(x) compte(s), structures vérifiées`)
 }
 
 async function ensureMigrations() {
