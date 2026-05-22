@@ -645,6 +645,74 @@ async function ensureMigrations() {
   }
 }
 
+async function ensureHospitalConnections() {
+  const pool = require('./db')
+  const { hash } = require('./utils/password')
+  const PASS = 'password123'
+
+  // All hospitals from the frontend HOSPITALS static list — names must match exactly
+  const hospitals = [
+    { email: 'chu.treichville@medmap.ci',         nom: 'CHU de Treichville',              tel: '+225 27 21 24 22 22', lits: 820 },
+    { email: 'pisam@medmap.ci',                    nom: 'PISAM',                            tel: '+225 27 22 44 10 10', lits: 210 },
+    { email: 'polyclinique.farah@medmap.ci',       nom: 'Polyclinique Farah',               tel: '+225 27 20 31 05 05', lits: 160 },
+    { email: 'chu.cocody@medmap.ci',               nom: 'CHU de Cocody',                    tel: '+225 27 22 44 34 34', lits: 580 },
+    { email: 'clinique.internationale@medmap.ci',  nom: 'Clinique Internationale',          tel: '+225 27 22 40 28 28', lits: 95  },
+    { email: 'clinique.saintviateur@medmap.ci',    nom: 'Clinique Saint Viateur',           tel: '+225 27 22 41 88 88', lits: 75  },
+    { email: 'polyclinique.sogefia@medmap.ci',     nom: 'Polyclinique Sogefia',             tel: '+225 27 21 35 44 44', lits: 130 },
+    { email: 'clinique.avicenne@medmap.ci',        nom: 'Clinique Avicenne',                tel: '+225 27 22 48 39 39', lits: 85  },
+    { email: 'polyclinique.agban@medmap.ci',       nom: 'Polyclinique Agban',               tel: '+225 27 23 67 88 99', lits: 65  },
+    { email: 'clinique.cathedrale@medmap.ci',      nom: "Clinique de la Cathédrale",        tel: '+225 27 20 22 11 55', lits: 50  },
+    { email: 'ica@medmap.ci',                      nom: "Institut de Cardiologie d'Abidjan",tel: '+225 27 21 24 72 72', lits: 120 },
+    { email: 'clinique.deuxplateaux@medmap.ci',    nom: 'Clinique des Deux Plateaux',       tel: '+225 27 22 41 50 50', lits: 60  },
+    { email: 'clinique.riviera@medmap.ci',         nom: 'Clinique Mère-Enfant La Riviera',  tel: '+225 27 22 43 60 60', lits: 100 },
+    // Also fix auto-init seeded accounts (clinique.avicenne@test.ci, chu.cocody@test.ci)
+    { email: 'clinique.avicenne@test.ci',          nom: 'Clinique Avicenne',                tel: '+225 27 22 48 39 39', lits: 85  },
+    { email: 'chu.cocody@test.ci',                 nom: 'CHU de Cocody',                    tel: '+225 27 22 44 34 34', lits: 580 },
+  ]
+
+  let connected = 0, created = 0
+  for (const h of hospitals) {
+    try {
+      let uid
+      const [uRows] = await pool.query('SELECT id FROM users WHERE email = ?', [h.email])
+      if (uRows.length) {
+        uid = uRows[0].id
+      } else {
+        const pw = await hash(PASS)
+        const parts = h.nom.split(' ')
+        const [res] = await pool.query(
+          'INSERT INTO users (email, password_hash, nom, prenom, telephone, role, is_active, is_verified) VALUES (?, ?, ?, ?, ?, ?, 1, 1)',
+          [h.email, pw, parts[0], parts.slice(1).join(' ') || 'Admin', h.tel, 'clinique']
+        )
+        uid = res.insertId
+        await pool.query('INSERT IGNORE INTO wallets (user_id, solde) VALUES (?, 50000)', [uid])
+        created++
+      }
+
+      // UPSERT structure_profile — ON DUPLICATE KEY on user_id UNIQUE
+      await pool.query(
+        `INSERT INTO structure_profiles (user_id, type, nom, adresse, ville, telephone, partenaire, note)
+         VALUES (?, 'clinique', ?, 'Abidjan', 'Abidjan', ?, 1, 4.5)
+         ON DUPLICATE KEY UPDATE nom = VALUES(nom), partenaire = 1`,
+        [uid, h.nom, h.tel]
+      )
+
+      // Get structure_id (reliable after upsert)
+      const [spRows] = await pool.query('SELECT id FROM structure_profiles WHERE user_id = ?', [uid])
+      if (spRows.length) {
+        await pool.query(
+          'INSERT IGNORE INTO clinic_profiles (structure_id, urgence24h, nombre_lits, horaires) VALUES (?, 1, ?, ?)',
+          [spRows[0].id, h.lits, '24h/24']
+        )
+        connected++
+      }
+    } catch (err) {
+      console.warn(`   ⚠️  ensureHospitalConnections [${h.email}]: ${err.message}`)
+    }
+  }
+  console.log(`   ✅ Hospital connections: ${connected} structure(s) connectée(s), ${created} compte(s) créé(s)`)
+}
+
 async function ensureHospitalSetup() {
   const pool = require('./db')
   const SERVICES = [
@@ -745,9 +813,10 @@ server.listen(PORT, () => {
   // Run DB setup in background — don't block server startup
   ;(async () => {
     try { await require('../database/auto-init')() } catch (e) { console.error('auto-init error:', e.message) }
-    try { await ensureMigrations() }    catch (e) { console.error('migrations error:', e.message) }
-    try { await ensureTestAccounts() }  catch (e) { console.error('test-accounts error:', e.message) }
-    try { await ensureHospitalSetup() } catch (e) { console.error('hospital-setup error:', e.message) }
+    try { await ensureMigrations() }           catch (e) { console.error('migrations error:', e.message) }
+    try { await ensureHospitalConnections() }  catch (e) { console.error('hospital-connections error:', e.message) }
+    try { await ensureTestAccounts() }         catch (e) { console.error('test-accounts error:', e.message) }
+    try { await ensureHospitalSetup() }        catch (e) { console.error('hospital-setup error:', e.message) }
     try { await ensureVetSetup() }      catch (e) { console.error('vet-setup error:', e.message) }
 
   // Quick table health check
