@@ -1,13 +1,17 @@
+// Must be first — before any require that could throw
+process.on('uncaughtException',  err => console.error('UNCAUGHT EXCEPTION:', err.message, err.stack))
+process.on('unhandledRejection', err => console.error('UNHANDLED REJECTION:', err))
+
 require('dotenv').config()
 const http = require('http')
 const { Server } = require('socket.io')
-const app = require('./app')
 
-// Prevent unhandled rejections from crashing the server (Node 18+)
-process.on('uncaughtException',  err => console.error('UNCAUGHT EXCEPTION:', err.message))
-process.on('unhandledRejection', err => console.error('UNHANDLED REJECTION:', err))
+console.log(`[startup] Loading app.js...`)
+const app = require('./app')
+console.log(`[startup] app.js loaded OK`)
 
 const PORT = process.env.PORT || 3000
+console.log(`[startup] PORT=${PORT}`)
 const allowedOrigins = [
   ...(process.env.FRONTEND_URL || 'http://localhost:3000').split(',').map(s => s.trim()),
   'https://medmap-plus-frontend.vercel.app',
