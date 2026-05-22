@@ -104,6 +104,53 @@ app.get('/setup-hospitals', async (req, res) => {
   res.json({ success: true, count: results.filter(r => r.status === 'ok').length, password: 'MedMap2026!', results })
 })
 
+// One-time: crée le compte Dr. Ibrahim Bah (Neurologue, Neuro Marcory, 120 000 FCFA)
+app.get('/setup-ibrahim-bah', async (req, res) => {
+  if (req.query.secret !== 'medmap2026') return res.status(403).json({ error: 'Forbidden' })
+  const pool = require('./db')
+  const bcrypt = require('bcryptjs')
+  const EMAIL = 'dr.ibrahim.bah@medmap.ci'
+  const hash  = await bcrypt.hash('password123', 12)
+  try {
+    const [[existing]] = await pool.query('SELECT id FROM users WHERE email = ?', [EMAIL])
+    let userId = existing?.id
+    if (!userId) {
+      const [r] = await pool.query(
+        `INSERT INTO users (email, password_hash, nom, prenom, telephone, role, is_active, is_verified)
+         VALUES (?, ?, 'Bah', 'Ibrahim', '+225 07 60 12 34', 'medecin', 1, 1)`,
+        [EMAIL, hash]
+      )
+      userId = r.insertId
+      await pool.query('INSERT IGNORE INTO wallets (user_id, solde) VALUES (?, 50000)', [userId])
+      console.log('[setup-ibrahim-bah] User créé id=', userId)
+    } else {
+      console.log('[setup-ibrahim-bah] User existant id=', userId, '— mise à jour profil')
+    }
+    await pool.query(
+      `INSERT INTO doctor_profiles
+         (user_id, specialite, cabinet, ville, tarif, disponible, experience_ans, note, teleconsultation, domicile)
+       VALUES (?, 'Neurologie', 'Neuro Marcory', 'Abidjan', 120000, 1, 18, 4.9, 1, 0)
+       ON DUPLICATE KEY UPDATE
+         specialite = 'Neurologie', cabinet = 'Neuro Marcory', ville = 'Abidjan',
+         tarif = 120000, disponible = 1, experience_ans = 18, note = 4.9,
+         teleconsultation = 1, domicile = 0`,
+      [userId]
+    )
+    res.json({
+      success: true,
+      email: EMAIL,
+      password: 'password123',
+      tarif: '120 000 FCFA',
+      specialite: 'Neurologie',
+      cabinet: 'Neuro Marcory',
+      userId,
+    })
+  } catch (e) {
+    console.error('[setup-ibrahim-bah]', e.message)
+    res.status(500).json({ error: e.message })
+  }
+})
+
 // 404
 app.use((req, res) => res.status(404).json({ detail: `Route ${req.method} ${req.path} introuvable` }))
 
