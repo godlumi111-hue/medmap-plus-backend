@@ -414,7 +414,7 @@ async function ensureMigrations() {
        ADD COLUMN IF NOT EXISTS room_id INT,
        ADD COLUMN IF NOT EXISTS ticket_numero VARCHAR(20),
        ADD COLUMN IF NOT EXISTS queue_position INT`,
-    `ALTER TABLE hospital_services ADD COLUMN IF NOT EXISTS prix DECIMAL(10,2) DEFAULT 5000.00`,
+    `ALTER TABLE hospital_services ADD COLUMN prix DECIMAL(10,2) DEFAULT 5000.00`,
     // Extend payments.statut ENUM to support hospital escrow states
     `ALTER TABLE payments MODIFY COLUMN statut ENUM('en_attente','bloque','confirme','libere','dispute','rembourse') DEFAULT 'en_attente'`,
     // Update existing service prices by name
@@ -475,7 +475,7 @@ async function ensureMigrations() {
     `ALTER TABLE queue_entries ADD COLUMN hospitalization_id INT NULL`,
     `ALTER TABLE queue_entries ADD COLUMN entry_type VARCHAR(20) DEFAULT 'consultation'`,
     // hospital_rooms: per-room pricing
-    `ALTER TABLE hospital_rooms ADD COLUMN IF NOT EXISTS prix DECIMAL(10,2) DEFAULT 0`,
+    `ALTER TABLE hospital_rooms ADD COLUMN prix DECIMAL(10,2) DEFAULT 0`,
     `UPDATE hospital_rooms SET prix = 50000 WHERE nom IN ('Chambre 1', 'Chambre 2', 'Chambre 3') AND prix = 0`,
     `UPDATE hospital_rooms SET prix = 120000 WHERE nom = 'Unité Chirurgie' AND prix = 0`,
     `UPDATE hospital_rooms SET prix = 60000 WHERE nom = 'Unité Médecine interne' AND prix = 0`,

@@ -15,16 +15,32 @@ const calledTimers = new Map()
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 async function getRoomsWithQueue(structureId) {
-  const [services] = await pool.query(
-    `SELECT s.id AS service_id, s.nom AS service_nom, s.specialite, s.prix,
-            r.id AS room_id, r.nom AS room_nom, r.statut, r.medecin_nom, r.ordre,
-            r.prix AS room_prix
-     FROM hospital_services s
-     JOIN hospital_rooms r ON r.service_id = s.id
-     WHERE s.structure_id = ? AND s.actif = 1
-     ORDER BY s.ordre, r.ordre`,
-    [structureId]
-  )
+  let services
+  try {
+    ;[services] = await pool.query(
+      `SELECT s.id AS service_id, s.nom AS service_nom, s.specialite, s.prix,
+              r.id AS room_id, r.nom AS room_nom, r.statut, r.medecin_nom, r.ordre,
+              r.prix AS room_prix
+       FROM hospital_services s
+       JOIN hospital_rooms r ON r.service_id = s.id
+       WHERE s.structure_id = ? AND s.actif = 1
+       ORDER BY s.ordre, r.ordre`,
+      [structureId]
+    )
+  } catch (_) {
+    // Fallback when prix columns don't exist yet (before migration)
+    ;[services] = await pool.query(
+      `SELECT s.id AS service_id, s.nom AS service_nom, s.specialite,
+              5000 AS prix,
+              r.id AS room_id, r.nom AS room_nom, r.statut, r.medecin_nom, r.ordre,
+              0 AS room_prix
+       FROM hospital_services s
+       JOIN hospital_rooms r ON r.service_id = s.id
+       WHERE s.structure_id = ? AND s.actif = 1
+       ORDER BY s.ordre, r.ordre`,
+      [structureId]
+    )
+  }
   const roomIds = services.map(r => r.room_id)
   let queueMap = {}
   if (roomIds.length) {
