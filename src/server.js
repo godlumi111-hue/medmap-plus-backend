@@ -3,6 +3,10 @@ const http = require('http')
 const { Server } = require('socket.io')
 const app = require('./app')
 
+// Prevent unhandled rejections from crashing the server (Node 18+)
+process.on('uncaughtException',  err => console.error('UNCAUGHT EXCEPTION:', err.message))
+process.on('unhandledRejection', err => console.error('UNHANDLED REJECTION:', err))
+
 const PORT = process.env.PORT || 5000
 const allowedOrigins = [
   ...(process.env.FRONTEND_URL || 'http://localhost:3000').split(',').map(s => s.trim()),
@@ -647,16 +651,18 @@ async function ensureVetSetup() {
   } catch (e) { console.error('ensureVetSetup:', e.message) }
 }
 
-server.listen(PORT, async () => {
-  console.log(`\n🚀 MedMap+ Backend démarré`)
-  console.log(`   URL : http://localhost:${PORT}`)
+server.listen(PORT, () => {
+  console.log(`\n🚀 MedMap+ Backend démarré sur port ${PORT}`)
   console.log(`   API : http://localhost:${PORT}/api/v1`)
   console.log(`   Santé : http://localhost:${PORT}/health\n`)
-  try { await require('../database/auto-init')() } catch (e) { console.error('auto-init error:', e.message) }
-  try { await ensureMigrations() }    catch (e) { console.error('migrations error:', e.message) }
-  try { await ensureTestAccounts() }  catch (e) { console.error('test-accounts error:', e.message) }
-  try { await ensureHospitalSetup() } catch (e) { console.error('hospital-setup error:', e.message) }
-  try { await ensureVetSetup() }      catch (e) { console.error('vet-setup error:', e.message) }
+
+  // Run DB setup in background — don't block server startup
+  ;(async () => {
+    try { await require('../database/auto-init')() } catch (e) { console.error('auto-init error:', e.message) }
+    try { await ensureMigrations() }    catch (e) { console.error('migrations error:', e.message) }
+    try { await ensureTestAccounts() }  catch (e) { console.error('test-accounts error:', e.message) }
+    try { await ensureHospitalSetup() } catch (e) { console.error('hospital-setup error:', e.message) }
+    try { await ensureVetSetup() }      catch (e) { console.error('vet-setup error:', e.message) }
 
   // Quick table health check
   const pool = require('./db')
@@ -707,4 +713,5 @@ server.listen(PORT, async () => {
       }
     }
   }
+  })().catch(e => console.error('Startup background error:', e.message))
 })
