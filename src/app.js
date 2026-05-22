@@ -124,7 +124,12 @@ app.get('/setup-ibrahim-bah', async (req, res) => {
       await pool.query('INSERT IGNORE INTO wallets (user_id, solde) VALUES (?, 50000)', [userId])
       console.log('[setup-ibrahim-bah] User créé id=', userId)
     } else {
-      console.log('[setup-ibrahim-bah] User existant id=', userId, '— mise à jour profil')
+      // Reset password + ensure active
+      await pool.query(
+        `UPDATE users SET password_hash = ?, nom = 'Bah', prenom = 'Ibrahim', is_active = 1, is_verified = 1 WHERE id = ?`,
+        [hash, userId]
+      )
+      console.log('[setup-ibrahim-bah] User existant id=', userId, '— password réinitialisé')
     }
     await pool.query(
       `INSERT INTO doctor_profiles
