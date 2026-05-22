@@ -77,7 +77,7 @@ app.get('/setup-hospitals', async (req, res) => {
       await pool.query(
         `INSERT INTO users (email, password_hash, nom, prenom, telephone, role, is_active, is_verified)
          VALUES (?, ?, 'Hopital', ?, ?, 'clinique', 1, 1)
-         ON DUPLICATE KEY UPDATE is_active = 1, is_verified = 1`,
+         ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), is_active = 1, is_verified = 1`,
         [h.email, PASS_HASH, h.email.split('@')[0], h.tel]
       )
       const [[u]] = await pool.query('SELECT id FROM users WHERE email = ?', [h.email])
