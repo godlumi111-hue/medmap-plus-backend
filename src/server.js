@@ -274,6 +274,11 @@ async function ensureTestAccounts() {
 async function ensureMigrations() {
   const pool = require('./db')
   const migrations = [
+    // doctor_profiles: add columns referenced by GET /users/doctors query
+    `ALTER TABLE doctor_profiles ADD COLUMN note DECIMAL(3,2) DEFAULT 4.5`,
+    `ALTER TABLE doctor_profiles ADD COLUMN teleconsultation TINYINT(1) DEFAULT 0`,
+    `ALTER TABLE doctor_profiles ADD COLUMN domicile TINYINT(1) DEFAULT 0`,
+    `ALTER TABLE doctor_profiles ADD COLUMN nb_patients INT DEFAULT 0`,
     // orders columns — split into individual statements for MySQL 5.7 compat
     `ALTER TABLE orders ADD COLUMN frais_livraison DECIMAL(10,2) DEFAULT 700.00`,
     `ALTER TABLE orders ADD COLUMN adresse_livraison VARCHAR(500)`,
@@ -805,6 +810,116 @@ async function ensureVetSetup() {
   } catch (e) { console.error('ensureVetSetup:', e.message) }
 }
 
+async function ensureAllProfessionals() {
+  const pool = require('./db')
+  const { hash } = require('./utils/password')
+  const PASS = 'MedMap2026!'
+  const pw = await hash(PASS)
+
+  // ── Médecins ─────────────────────────────────────────────────────────────────
+  const doctors = [
+    { email: 'dr.konan@medmap.ci',      nom: 'Konan',      prenom: 'Aya',          tel: '+225 07 01 11 22', specialite: 'Cardiologie',           cabinet: 'Cabinet Cardio Plateau',       ville: 'Plateau',       tarif: 25000, exp: 12, note: 4.8, teleconsult: 1, domicile: 0, nb: 340 },
+    { email: 'dr.koffi@medmap.ci',       nom: 'Koffi',      prenom: 'Serge',        tel: '+225 07 02 33 44', specialite: 'Médecine générale',      cabinet: 'Cabinet Cocody Centre',        ville: 'Cocody',        tarif: 10000, exp: 8,  note: 4.6, teleconsult: 1, domicile: 1, nb: 520 },
+    { email: 'dr.diallo@medmap.ci',      nom: 'Diallo',     prenom: 'Fatoumata',    tel: '+225 07 03 55 66', specialite: 'Pédiatrie',              cabinet: 'Pédiatrie Riviera',            ville: 'Riviera',       tarif: 15000, exp: 10, note: 4.9, teleconsult: 1, domicile: 0, nb: 280 },
+    { email: 'dr.traore@medmap.ci',      nom: 'Traoré',     prenom: 'Moussa',       tel: '+225 07 04 77 88', specialite: 'Gynécologie-Obstétrique', cabinet: 'Clinique Deux Plateaux',       ville: 'Deux Plateaux', tarif: 20000, exp: 15, note: 4.7, teleconsult: 0, domicile: 0, nb: 410 },
+    { email: 'dr.bah@medmap.ci',         nom: 'Bah',        prenom: 'Ibrahim',      tel: '+225 07 05 99 00', specialite: 'Neurologie',             cabinet: 'Neuro Marcory',                ville: 'Marcory',       tarif: 30000, exp: 18, note: 4.9, teleconsult: 1, domicile: 0, nb: 195 },
+    { email: 'dr.yao@medmap.ci',         nom: 'Yao',        prenom: 'Patricia',     tel: '+225 07 06 12 34', specialite: 'Dermatologie',           cabinet: 'DermaPlus Adjamé',             ville: 'Adjamé',        tarif: 15000, exp: 7,  note: 4.5, teleconsult: 1, domicile: 0, nb: 310 },
+    { email: 'dr.ouedraogo@medmap.ci',   nom: 'Ouédraogo',  prenom: 'Jean',         tel: '+225 07 07 23 45', specialite: 'Ophtalmologie',          cabinet: 'OphtaVision Plateau',          ville: 'Plateau',       tarif: 20000, exp: 11, note: 4.6, teleconsult: 0, domicile: 0, nb: 230 },
+    { email: 'dr.kone.psy@medmap.ci',    nom: 'Koné',       prenom: 'Aminata',      tel: '+225 07 08 34 56', specialite: 'Psychiatrie',            cabinet: 'Centre Psy Cocody',            ville: 'Cocody',        tarif: 25000, exp: 9,  note: 4.7, teleconsult: 1, domicile: 0, nb: 148 },
+    { email: 'dr.diomande@medmap.ci',    nom: 'Diomandé',   prenom: 'Sory',         tel: '+225 07 09 45 67', specialite: 'ORL',                   cabinet: 'ORL Treichville',              ville: 'Treichville',   tarif: 18000, exp: 13, note: 4.5, teleconsult: 0, domicile: 0, nb: 265 },
+    { email: 'dr.bamba@medmap.ci',       nom: 'Bamba',      prenom: 'Seydou',       tel: '+225 07 10 56 78', specialite: 'Chirurgie',              cabinet: 'CHU Treichville',              ville: 'Treichville',   tarif: 35000, exp: 20, note: 4.8, teleconsult: 0, domicile: 0, nb: 180 },
+    { email: 'dr.cisse@medmap.ci',       nom: 'Cissé',      prenom: 'Mariam',       tel: '+225 07 11 67 89', specialite: 'Endocrinologie',         cabinet: 'EndoSanté Riviera',            ville: 'Riviera',       tarif: 22000, exp: 14, note: 4.7, teleconsult: 1, domicile: 0, nb: 205 },
+    { email: 'dr.coulibaly@medmap.ci',   nom: 'Coulibaly',  prenom: 'Oumar',        tel: '+225 07 12 78 90', specialite: 'Kinésithérapie',         cabinet: 'KinéPro Yopougon',             ville: 'Yopougon',      tarif: 12000, exp: 6,  note: 4.4, teleconsult: 0, domicile: 1, nb: 390 },
+    { email: 'dr.mensah@medmap.ci',      nom: 'Mensah',     prenom: 'Koffi',        tel: '+225 07 13 89 01', specialite: 'Médecine interne',       cabinet: 'Cabinet Angré',                ville: 'Angré',         tarif: 20000, exp: 16, note: 4.8, teleconsult: 1, domicile: 0, nb: 295 },
+    { email: 'dr.ouattara@medmap.ci',    nom: 'Ouattara',   prenom: 'Djénéba',      tel: '+225 07 14 90 12', specialite: 'Nutrition & Diététique', cabinet: 'NutriSanté Cocody',            ville: 'Cocody',        tarif: 15000, exp: 5,  note: 4.6, teleconsult: 1, domicile: 1, nb: 430 },
+  ]
+
+  // ── Coachs santé ─────────────────────────────────────────────────────────────
+  const coaches = [
+    { email: 'coach.sanogo@medmap.ci',   nom: 'Sanogo',     prenom: 'Aya',          tel: '+225 07 20 11 22', specialite: 'Nutrition & Bien-être',   desc: 'Coach certifiée en nutrition et hygiène de vie. Accompagnement personnalisé pour retrouver énergie et vitalité.',           tarif: 45000, exp: 6,  note: 4.9, nb: 87,  langues: ['Français','Dioula'] },
+    { email: 'coach.keita@medmap.ci',    nom: 'Keïta',      prenom: 'Ibrahim',      tel: '+225 07 21 33 44', specialite: 'Sport & Remise en forme',  desc: 'Ancien athlète de haut niveau. Programmes sur mesure pour la remise en forme, la performance et la perte de poids.',       tarif: 40000, exp: 8,  note: 4.7, nb: 112, langues: ['Français','Malinké'] },
+    { email: 'coach.ahou@medmap.ci',     nom: 'Ahou',       prenom: 'Marie-Thérèse',tel: '+225 07 22 55 66', specialite: 'Stress & Mindfulness',     desc: 'Psychologue du bien-être. Techniques de gestion du stress, méditation et relaxation pour une meilleure qualité de vie.',   tarif: 50000, exp: 10, note: 4.8, nb: 64,  langues: ['Français','Anglais'] },
+    { email: 'coach.asante@medmap.ci',   nom: 'Asante',     prenom: 'Kofi',         tel: '+225 07 23 77 88', specialite: 'Diabète & Alimentation',   desc: 'Spécialiste du coaching diététique pour diabétiques. Suivi rigoureux avec plans alimentaires adaptés.',                   tarif: 55000, exp: 12, note: 4.9, nb: 53,  langues: ['Français','Twi','Anglais'] },
+    { email: 'coach.coulibaly@medmap.ci',nom: 'Coulibaly',  prenom: 'Djeneba',      tel: '+225 07 24 99 00', specialite: 'Maternité & Post-partum',  desc: 'Sage-femme et coach périnatal. Accompagnement de la grossesse à la reprise du corps après accouchement.',                 tarif: 48000, exp: 7,  note: 4.8, nb: 76,  langues: ['Français','Dioula','Bambara'] },
+    { email: 'coach.mensah@medmap.ci',   nom: 'Mensah',     prenom: 'Serge',        tel: '+225 07 25 12 34', specialite: 'Cardio & Hypertension',    desc: 'Coach spécialisé en prévention cardiovasculaire. Programmes adaptés pour hypertendus et patients à risque.',              tarif: 52000, exp: 9,  note: 4.7, nb: 61,  langues: ['Français','Ewe'] },
+  ]
+
+  // ── Services d'urgence ────────────────────────────────────────────────────────
+  const emergency = [
+    { email: 'samu@medmap.ci',       nom: 'SAMU',      prenom: 'Côte d\'Ivoire', tel: '+225 185',           role: 'samu' },
+    { email: 'pompiers@medmap.ci',   nom: 'Pompiers',  prenom: 'Abidjan',        tel: '+225 180',           role: 'pompiers' },
+    { email: 'ambulance@medmap.ci',  nom: 'Ambulance', prenom: 'MedMap+',        tel: '+225 27 22 00 00 00',role: 'ambulance' },
+  ]
+
+  let ok = 0, fail = 0
+
+  // Upsert doctors
+  for (const d of doctors) {
+    try {
+      await pool.query(
+        `INSERT INTO users (email, password_hash, nom, prenom, telephone, role, is_active, is_verified)
+         VALUES (?, ?, ?, ?, ?, 'medecin', 1, 1)
+         ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), role = 'medecin', is_active = 1, is_verified = 1`,
+        [d.email, pw, d.nom, d.prenom, d.tel]
+      )
+      const [[u]] = await pool.query('SELECT id FROM users WHERE email = ?', [d.email])
+      await pool.query('INSERT IGNORE INTO wallets (user_id, solde) VALUES (?, 10000)', [u.id])
+      await pool.query(
+        `INSERT INTO doctor_profiles
+           (user_id, specialite, cabinet, ville, tarif, disponible, experience_ans, note, teleconsultation, domicile, nb_patients)
+         VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           specialite = VALUES(specialite), cabinet = VALUES(cabinet), ville = VALUES(ville),
+           tarif = VALUES(tarif), disponible = 1, experience_ans = VALUES(experience_ans),
+           note = VALUES(note), teleconsultation = VALUES(teleconsultation),
+           domicile = VALUES(domicile), nb_patients = VALUES(nb_patients)`,
+        [u.id, d.specialite, d.cabinet, d.ville, d.tarif, d.exp, d.note, d.teleconsult, d.domicile, d.nb]
+      )
+      ok++
+    } catch (e) { console.warn(`  ⚠️  doctor [${d.email}]: ${e.message}`); fail++ }
+  }
+
+  // Upsert coaches
+  for (const c of coaches) {
+    try {
+      await pool.query(
+        `INSERT INTO users (email, password_hash, nom, prenom, telephone, role, is_active, is_verified)
+         VALUES (?, ?, ?, ?, ?, 'coach', 1, 1)
+         ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), role = 'coach', is_active = 1, is_verified = 1`,
+        [c.email, pw, c.nom, c.prenom, c.tel]
+      )
+      const [[u]] = await pool.query('SELECT id FROM users WHERE email = ?', [c.email])
+      await pool.query('INSERT IGNORE INTO wallets (user_id, solde) VALUES (?, 10000)', [u.id])
+      await pool.query(
+        `INSERT INTO coach_profiles
+           (user_id, specialite, description, tarif_mensuel, disponible, note, nb_patients, experience_ans, ville, langues)
+         VALUES (?, ?, ?, ?, 1, ?, ?, ?, 'Abidjan', ?)
+         ON DUPLICATE KEY UPDATE
+           specialite = VALUES(specialite), description = VALUES(description),
+           tarif_mensuel = VALUES(tarif_mensuel), disponible = 1, note = VALUES(note),
+           nb_patients = VALUES(nb_patients), experience_ans = VALUES(experience_ans)`,
+        [u.id, c.specialite, c.desc, c.tarif, c.note, c.nb, c.exp, JSON.stringify(c.langues)]
+      )
+      ok++
+    } catch (e) { console.warn(`  ⚠️  coach [${c.email}]: ${e.message}`); fail++ }
+  }
+
+  // Upsert emergency accounts
+  for (const em of emergency) {
+    try {
+      await pool.query(
+        `INSERT INTO users (email, password_hash, nom, prenom, telephone, role, is_active, is_verified)
+         VALUES (?, ?, ?, ?, ?, ?, 1, 1)
+         ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), role = VALUES(role), is_active = 1, is_verified = 1`,
+        [em.email, pw, em.nom, em.prenom, em.tel, em.role]
+      )
+      ok++
+    } catch (e) { console.warn(`  ⚠️  emergency [${em.email}]: ${e.message}`); fail++ }
+  }
+
+  console.log(`   ✅ ensureAllProfessionals: ${ok} ok, ${fail} fail`)
+}
+
 server.listen(PORT, () => {
   console.log(`\n🚀 MedMap+ Backend démarré sur port ${PORT}`)
   console.log(`   API : http://localhost:${PORT}/api/v1`)
@@ -817,7 +932,8 @@ server.listen(PORT, () => {
     try { await ensureHospitalConnections() }  catch (e) { console.error('hospital-connections error:', e.message) }
     try { await ensureTestAccounts() }         catch (e) { console.error('test-accounts error:', e.message) }
     try { await ensureHospitalSetup() }        catch (e) { console.error('hospital-setup error:', e.message) }
-    try { await ensureVetSetup() }      catch (e) { console.error('vet-setup error:', e.message) }
+    try { await ensureVetSetup() }             catch (e) { console.error('vet-setup error:', e.message) }
+    try { await ensureAllProfessionals() }     catch (e) { console.error('professionals error:', e.message) }
 
   // Quick table health check
   const pool = require('./db')
