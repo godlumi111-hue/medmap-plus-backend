@@ -387,22 +387,64 @@ router.put('/orders/:id/status', requireAuth, async (req, res) => {
     return res.status(422).json({ detail: 'Statut invalide' })
   }
   try {
-    await pool.query('UPDATE orders SET statut = ? WHERE id = ?', [statut, req.params.id])
-    const [rows] = await pool.query(
-      `SELECT o.*, u.id AS patient_user_id FROM orders o JOIN users u ON u.id = o.patient_id WHERE o.id = ?`,
+    const [existing] = await pool.query(
+      `SELECT o.*, u.id AS patient_user_id
+       FROM orders o JOIN users u ON u.id = o.patient_id
+       WHERE o.id = ?`,
       [req.params.id]
     )
-    const order = rows[0]
+    if (!existing.length) return res.status(404).json({ detail: 'Commande introuvable' })
+    const order = existing[0]
+
+    if (statut === 'annule' && order.paiement_statut === 'bloque') {
+      // Refund the full amount to the patient's wallet
+      const total = parseFloat(order.total) || 0
+      if (total > 0) {
+        const pw = await getOrCreateWallet(order.patient_id)
+        await pool.query('UPDATE wallets SET solde = solde + ? WHERE id = ?', [total, pw.id])
+        await addTransaction(pw.id, total, 'credit',
+          `Remboursement commande annulée #${order.id}`)
+        // Cancel any linked pending payment record
+        await pool.query(
+          `UPDATE payments SET statut = 'annule'
+           WHERE payer_id = ? AND structure_id = ? AND statut = 'en_attente'`,
+          [order.patient_id, order.pharmacy_id]
+        ).catch(() => {})
+      }
+      await pool.query(
+        'UPDATE orders SET statut = ?, paiement_statut = ? WHERE id = ?',
+        ['annule', 'rembourse', order.id]
+      )
+    } else {
+      await pool.query('UPDATE orders SET statut = ? WHERE id = ?', [statut, order.id])
+    }
+
+    const [rows] = await pool.query(
+      `SELECT o.*, u.id AS patient_user_id
+       FROM orders o JOIN users u ON u.id = o.patient_id
+       WHERE o.id = ?`,
+      [req.params.id]
+    )
+    const updated = rows[0]
     const io = req.app.get('io')
-    if (order?.patient_user_id) {
-      const label = STATUS_LABELS[statut] || statut
-      await notifyAndEmit(io, order.patient_user_id, `order_${statut}`,
-        `Commande #${req.params.id} — ${label}`, null,
+
+    if (updated?.patient_user_id) {
+      const isCancel = statut === 'annule'
+      await notifyAndEmit(
+        io, updated.patient_user_id, `order_${statut}`,
+        isCancel
+          ? 'Commande annulée — Remboursement effectué'
+          : `Commande #${req.params.id} — ${STATUS_LABELS[statut] || statut}`,
+        isCancel
+          ? `Votre commande #${order.id} a été annulée par la pharmacie. Le montant de ${parseFloat(order.total || 0).toLocaleString('fr-FR')} FCFA a été remboursé dans votre portefeuille.`
+          : null,
         { order_id: parseInt(req.params.id), statut }
       ).catch(() => {})
-      if (io) io.to(`user_${order.patient_user_id}`).emit('order:update', { order_id: parseInt(req.params.id), statut })
+      if (io) io.to(`user_${updated.patient_user_id}`).emit('order:update',
+        { order_id: parseInt(req.params.id), statut })
     }
-    res.json(formatOrder(order))
+
+    res.json(formatOrder(updated))
   } catch (err) {
     console.error(err)
     res.status(500).json({ detail: 'Erreur serveur' })
@@ -686,6 +728,9 @@ router.post('/orders/:id/confirm-receipt', requireAuth, async (req, res) => {
 
     if (order.paiement_statut === 'libere') {
       return res.status(422).json({ detail: 'Fonds déjà libérés' })
+    }
+    if (order.paiement_statut === 'rembourse' || order.statut === 'annule') {
+      return res.status(422).json({ detail: 'Cette commande a été annulée et remboursée' })
     }
 
     await pool.query(
