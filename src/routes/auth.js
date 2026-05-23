@@ -5,6 +5,11 @@ const { hash, compare } = require('../utils/password')
 const { signToken } = require('../utils/jwt')
 const { requireAuth } = require('../middleware/auth')
 
+// Extend ENUM to support all roles used by the register form
+pool.query(
+  `ALTER TABLE users MODIFY COLUMN role ENUM('patient','medecin','pharmacie','clinique','veterinaire','admin','livreur','coach','samu','pompiers','ambulance') NOT NULL DEFAULT 'patient'`
+).catch(() => {})
+
 function formatUser(u) {
   return {
     id: u.id,
@@ -58,7 +63,7 @@ router.post('/register', async (req, res) => {
     } else if (['pharmacie', 'clinique', 'veterinaire'].includes(role)) {
       const [spRes] = await pool.query(
         'INSERT INTO structure_profiles (user_id, type, nom) VALUES (?, ?, ?)',
-        [userId, role, `${prenom} ${nom}`]
+        [userId, role, nom]
       )
       const structId = spRes.insertId
       if (role === 'pharmacie') {
@@ -70,6 +75,11 @@ router.post('/register', async (req, res) => {
       }
     } else if (role === 'livreur') {
       await pool.query('INSERT INTO livreur_profiles (user_id) VALUES (?)', [userId])
+    } else if (['samu', 'pompiers', 'ambulance'].includes(role)) {
+      await pool.query(
+        'INSERT INTO structure_profiles (user_id, type, nom) VALUES (?, ?, ?)',
+        [userId, role, nom]
+      ).catch(() => {})
     }
 
     const [users] = await pool.query('SELECT * FROM users WHERE id = ?', [userId])
