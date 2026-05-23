@@ -221,6 +221,22 @@ router.post('/deposit/:id/confirm', requireAuth, async (req, res) => {
   }
 })
 
+// POST /wallet/deposit/:id/cancel — user refuses/cancels the deposit
+router.post('/deposit/:id/cancel', requireAuth, async (req, res) => {
+  const depositId = parseInt(req.params.id, 10)
+  try {
+    const [rows] = await pool.query('SELECT * FROM deposit_requests WHERE id = ? AND user_id = ?', [depositId, req.user.id])
+    if (!rows.length) return res.status(404).json({ detail: 'Dépôt introuvable.' })
+    const dep = rows[0]
+    if (dep.statut !== 'en_attente') return res.status(409).json({ detail: `Ce dépôt est déjà ${dep.statut}.` })
+    await pool.query("UPDATE deposit_requests SET statut = 'echec' WHERE id = ?", [depositId])
+    res.json({ detail: 'Dépôt annulé.', reference: dep.reference })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ detail: 'Erreur serveur' })
+  }
+})
+
 // GET /wallet/deposits — list user's deposit requests
 router.get('/deposits', requireAuth, async (req, res) => {
   try {
