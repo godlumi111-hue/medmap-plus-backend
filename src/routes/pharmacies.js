@@ -9,6 +9,32 @@ pool.query(
   `ALTER TABLE orders ADD COLUMN IF NOT EXISTS frais_livraison DECIMAL(10,2) DEFAULT 700.00`
 ).catch(() => {})
 
+// Auto-create stock movements table
+;(async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS pharmacy_stock_movements (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        pharmacy_id INT NOT NULL,
+        medicine_id INT NOT NULL,
+        type ENUM('entree','sortie') NOT NULL,
+        quantite INT NOT NULL,
+        motif VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+    // Add missing columns to pharmacy_medicines
+    await pool.query(`ALTER TABLE pharmacy_medicines ADD COLUMN derniere_entree TIMESTAMP NULL`).catch(() => {})
+    await pool.query(`ALTER TABLE pharmacy_medicines ADD COLUMN derniere_sortie TIMESTAMP NULL`).catch(() => {})
+    // Ensure Doliprane exists in medicines
+    await pool.query(`
+      INSERT IGNORE INTO medicines (nom, description, categorie, prix, stock, sur_ordonnance, fabricant)
+      SELECT 'Doliprane 1000mg','Paracétamol 1000mg. Antalgique et antipyrétique. Usage : douleurs et fièvre de l''adulte.','Analgésique',1050,200,0,'Sanofi'
+      WHERE NOT EXISTS (SELECT 1 FROM medicines WHERE nom LIKE '%Doliprane%')
+    `).catch(() => {})
+  } catch {}
+})()
+
 const FRAIS_LIVRAISON_DEFAULT = 700
 
 const STATUS_LABELS = {
@@ -740,6 +766,146 @@ router.get('/orders/myorders', requireAuth, async (req, res) => {
       [req.user.id]
     )
     res.json(rows.map(formatOrder))
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ detail: 'Erreur serveur' })
+  }
+})
+
+// ─── Stock management (pharmacy-side) ────────────────────────────────────────
+
+// GET /pharmacies/my/stock — list all medicines with pharmacy stock info
+router.get('/my/stock', requireAuth, async (req, res) => {
+  try {
+    const [sp] = await pool.query('SELECT id FROM structure_profiles WHERE user_id = ?', [req.user.id])
+    if (!sp.length) return res.status(404).json({ detail: 'Profil pharmacie introuvable' })
+    const pharmacyId = sp[0].id
+
+    const [rows] = await pool.query(
+      `SELECT m.id, m.nom, m.categorie, m.fabricant, m.sur_ordonnance,
+              COALESCE(pm.stock_local, 0) AS stock_local,
+              COALESCE(pm.prix_local, m.prix) AS prix,
+              pm.derniere_entree, pm.derniere_sortie
+       FROM medicines m
+       LEFT JOIN pharmacy_medicines pm ON pm.medicine_id = m.id AND pm.pharmacy_id = ?
+       ORDER BY m.nom`,
+      [pharmacyId]
+    )
+    res.json(rows.map(r => ({
+      ...r,
+      sur_ordonnance: Boolean(r.sur_ordonnance),
+      prix: r.prix ? parseFloat(r.prix) : null,
+      stock_local: parseInt(r.stock_local) || 0,
+    })))
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ detail: 'Erreur serveur' })
+  }
+})
+
+// POST /pharmacies/my/stock/entree — add stock for a medicine
+router.post('/my/stock/entree', requireAuth, async (req, res) => {
+  const { medicine_id, quantite, prix_local, motif } = req.body
+  if (!medicine_id || !quantite || quantite <= 0) {
+    return res.status(422).json({ detail: 'medicine_id et quantite requis' })
+  }
+  try {
+    const [sp] = await pool.query('SELECT id FROM structure_profiles WHERE user_id = ?', [req.user.id])
+    if (!sp.length) return res.status(404).json({ detail: 'Profil pharmacie introuvable' })
+    const pharmacyId = sp[0].id
+
+    const [existing] = await pool.query(
+      'SELECT id, stock_local FROM pharmacy_medicines WHERE pharmacy_id = ? AND medicine_id = ?',
+      [pharmacyId, medicine_id]
+    )
+    if (existing.length) {
+      const newStock = (parseInt(existing[0].stock_local) || 0) + parseInt(quantite)
+      await pool.query(
+        'UPDATE pharmacy_medicines SET stock_local = ?, derniere_entree = NOW() ' +
+        (prix_local ? ', prix_local = ?' : '') +
+        ' WHERE id = ?',
+        prix_local
+          ? [newStock, parseFloat(prix_local), existing[0].id]
+          : [newStock, existing[0].id]
+      )
+    } else {
+      await pool.query(
+        'INSERT INTO pharmacy_medicines (pharmacy_id, medicine_id, stock_local, prix_local, derniere_entree) VALUES (?, ?, ?, ?, NOW())',
+        [pharmacyId, medicine_id, parseInt(quantite), prix_local ? parseFloat(prix_local) : null]
+      )
+    }
+
+    await pool.query(
+      'INSERT INTO pharmacy_stock_movements (pharmacy_id, medicine_id, type, quantite, motif) VALUES (?, ?, ?, ?, ?)',
+      [pharmacyId, medicine_id, 'entree', parseInt(quantite), motif || null]
+    )
+
+    const [rows] = await pool.query(
+      'SELECT stock_local FROM pharmacy_medicines WHERE pharmacy_id = ? AND medicine_id = ?',
+      [pharmacyId, medicine_id]
+    )
+    res.json({ nouveau_stock: parseInt(rows[0]?.stock_local) || 0 })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ detail: 'Erreur serveur' })
+  }
+})
+
+// POST /pharmacies/my/stock/sortie — remove stock for a medicine
+router.post('/my/stock/sortie', requireAuth, async (req, res) => {
+  const { medicine_id, quantite, motif } = req.body
+  if (!medicine_id || !quantite || quantite <= 0) {
+    return res.status(422).json({ detail: 'medicine_id et quantite requis' })
+  }
+  try {
+    const [sp] = await pool.query('SELECT id FROM structure_profiles WHERE user_id = ?', [req.user.id])
+    if (!sp.length) return res.status(404).json({ detail: 'Profil pharmacie introuvable' })
+    const pharmacyId = sp[0].id
+
+    const [existing] = await pool.query(
+      'SELECT id, stock_local FROM pharmacy_medicines WHERE pharmacy_id = ? AND medicine_id = ?',
+      [pharmacyId, medicine_id]
+    )
+    const currentStock = existing.length ? (parseInt(existing[0].stock_local) || 0) : 0
+    if (currentStock < parseInt(quantite)) {
+      return res.status(400).json({ detail: `Stock insuffisant (${currentStock} disponible)` })
+    }
+    const newStock = currentStock - parseInt(quantite)
+    if (existing.length) {
+      await pool.query(
+        'UPDATE pharmacy_medicines SET stock_local = ?, derniere_sortie = NOW() WHERE id = ?',
+        [newStock, existing[0].id]
+      )
+    }
+
+    await pool.query(
+      'INSERT INTO pharmacy_stock_movements (pharmacy_id, medicine_id, type, quantite, motif) VALUES (?, ?, ?, ?, ?)',
+      [pharmacyId, medicine_id, 'sortie', parseInt(quantite), motif || null]
+    )
+
+    res.json({ nouveau_stock: newStock })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ detail: 'Erreur serveur' })
+  }
+})
+
+// GET /pharmacies/my/stock/movements — movement history
+router.get('/my/stock/movements', requireAuth, async (req, res) => {
+  try {
+    const [sp] = await pool.query('SELECT id FROM structure_profiles WHERE user_id = ?', [req.user.id])
+    if (!sp.length) return res.status(404).json({ detail: 'Profil pharmacie introuvable' })
+    const pharmacyId = sp[0].id
+
+    const [rows] = await pool.query(
+      `SELECT sm.*, m.nom AS medicine_nom, m.categorie
+       FROM pharmacy_stock_movements sm
+       JOIN medicines m ON m.id = sm.medicine_id
+       WHERE sm.pharmacy_id = ?
+       ORDER BY sm.created_at DESC LIMIT 100`,
+      [pharmacyId]
+    )
+    res.json(rows)
   } catch (err) {
     console.error(err)
     res.status(500).json({ detail: 'Erreur serveur' })
